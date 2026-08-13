@@ -2,20 +2,20 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_CONFIG, normalizeConfig } from '../src/config.js';
 
-test('normalizeConfig coerces Plex form values', () => {
-  const config = normalizeConfig({
-    server_url: 'http://plex:32400/',
-    token: ' token ',
-    poll_frequency: '45',
-  });
-  assert.equal(config.server_url, 'http://plex:32400');
-  assert.equal(config.token, 'token');
-  assert.equal(config.poll_frequency, 45);
-  assert.equal(config.player_name, DEFAULT_CONFIG.player_name);
-});
-
-test('normalizeConfig provides stable Plex defaults', () => {
+test('Plex configuration has no container-local URL default', () => {
   assert.equal(DEFAULT_CONFIG.server_url, '');
   assert.equal(DEFAULT_CONFIG.client_identifier, 'gladys-plex-integration');
-  assert.equal(DEFAULT_CONFIG.player_name, '');
+});
+
+test('normalizeConfig trims the Plex URL, token and trailing slash', () => {
+  const config = normalizeConfig({
+    server_url: ' http://192.168.1.20:32400/ ',
+    token: ' token ',
+    client_identifier: ' gladys-test ',
+  });
+  assert.deepEqual(config, {
+    server_url: 'http://192.168.1.20:32400',
+    token: 'token',
+    client_identifier: 'gladys-test',
+  });
 });

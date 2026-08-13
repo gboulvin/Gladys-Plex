@@ -1,61 +1,72 @@
 import { afterEach, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getServerIdentity, normalizeSession } from '../src/plex.js';
+import { getIdentity, getSessions, normalizeSession, stopSession } from '../src/plex.js';
 
 const realFetch = globalThis.fetch;
+const config = {
+  server_url: 'http://192.168.1.20:32400',
+  token: 'plex-token',
+  client_identifier: 'gladys-test',
+};
 
 afterEach(() => {
   globalThis.fetch = realFetch;
 });
 
-test('normalizeSession parses a standard Plex session', () => {
-  const raw = {
-    session: { id: 'session-123' },
-    key: '/library/metadata/1',
-    ratingKey: '1',
-    title: 'Interstellar',
-    viewOffset: 1000,
-    duration: 10000,
-    Player: {
-      state: 'playing',
-      machineIdentifier: 'player-abc',
-      title: 'Living Room TV',
-    },
+test('getSessions requests official Plex JSON sessions with required headers', async () => {
+  let request;
+  globalThis.fetch = async (url, options) => {
+    request = { url: String(url), options };
+    return { ok: true, json: async () => ({ MediaContainer: { Metadata: [] } }) };
   };
-  const normalized = normalizeSession(raw);
-  assert.equal(normalized.sessionId, 'session-123');
-  assert.equal(normalized.title, 'Interstellar');
-  assert.equal(normalized.state, 'playing');
-  assert.equal(normalized.playerId, 'player-abc');
-  assert.equal(normalized.playerTitle, 'Living Room TV');
+  assert.deepEqual(await getSessions(config), []);
+  assert.equal(request.url, 'http://192.168.1.20:32400/status/sessions');
+  assert.equal(request.options.headers.Accept, 'application/json');
+  assert.equal(request.options.headers['X-Plex-Token'], 'plex-token');
+  assert.equal(request.options.headers['X-Plex-Client-Identifier'], 'gladys-test');
 });
 
-test('normalizeSession handles TV show titles', () => {
-  const raw = {
-    grandparentTitle: 'Breaking Bad',
-    title: 'Pilot',
-    Player: { state: 'paused' },
+test('stopSession uses the official server-side termination endpoint', async () => {
+  let request;
+  globalThis.fetch = async (url, options) => {
+    request = { url: String(url), options };
+    return { ok: true, text: async () => '' };
   };
-  const normalized = normalizeSession(raw);
-  assert.equal(normalized.title, 'Breaking Bad — Pilot');
-  assert.equal(normalized.state, 'paused');
+  await stopSession(config, 'session-42');
+  assert.match(request.url, /\/status\/sessions\/terminate\?sessionId=session-42/);
+  assert.equal(request.options.method, 'POST');
 });
 
-test('getServerIdentity rejects localhost because the integration runs in a container', async () => {
+test('getIdentity rejects a container-local Plex URL before making a request', async () => {
   await assert.rejects(
-    () => getServerIdentity({ server_url: 'http://localhost:32400', token: 'token' }),
+    () => getIdentity({ ...config, server_url: 'http://localhost:32400' }),
     /points to the integration container/,
   );
 });
 
-test('getServerIdentity explains a refused Plex network connection', async () => {
+test('getIdentity returns a useful refused-connection error', async () => {
   globalThis.fetch = async () => {
     const error = new TypeError('fetch failed');
     error.cause = { code: 'ECONNREFUSED' };
     throw error;
   };
-  await assert.rejects(
-    () => getServerIdentity({ server_url: 'http://192.168.1.20:32400', token: 'token' }),
-    /Connection refused by Plex.*port 32400/,
+  await assert.rejects(() => getIdentity(config), /Connection refused by Plex.*port 32400/);
+});
+
+test('normalizeSession extracts the session, player, state and title', () => {
+  assert.deepEqual(
+    normalizeSession({
+      Session: { id: 'session-1' },
+      title: 'Pilot',
+      grandparentTitle: 'Show',
+      Player: { machineIdentifier: 'player-1', title: 'Living room', state: 'playing' },
+    }),
+    {
+      sessionId: 'session-1',
+      playerId: 'player-1',
+      playerTitle: 'Living room',
+      state: 'playing',
+      title: 'Show — Pilot',
+    },
   );
 });

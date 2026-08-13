@@ -4,44 +4,31 @@ import {
   DEVICE_BLUEPRINTS,
   buildDiscoveredDevices,
   findBlueprintByDevice,
-  identifyDevice,
 } from './src/devices/index.js';
-import { parsePlexWebhookBody, setWebhookAvailability } from './src/devices/plexPlayer.js';
+import { playbackFromWebhook, parsePlexWebhook } from './src/webhook.js';
 
 const gladys = new GladysIntegration();
 let config = normalizeConfig();
 
-async function refreshPlex() {
-  for (const blueprint of DEVICE_BLUEPRINTS) {
-    if (typeof blueprint.refresh === 'function') await blueprint.refresh(gladys, config);
-  }
-}
-
-async function refreshWebhookState() {
-  const state = await gladys.getWebhooks().catch(() => ({ available: false, webhooks: [] }));
-  setWebhookAvailability(state.available === true);
-  return state;
-}
-
-async function publishFallbackDevices() {
+async function publishDevices() {
   await gladys.publishDiscoveredDevices(buildDiscoveredDevices(gladys, config));
+}
+
+async function updateWebhookRelayAvailability(webhookState) {
+  const state = webhookState ?? (await gladys.getWebhooks());
+  for (const blueprint of DEVICE_BLUEPRINTS) {
+    blueprint.setWebhookRelayAvailable?.(state.available);
+  }
 }
 
 gladys.onScanRequest(async () => {
   logger.info('Plex discovery requested');
-  try {
-    await refreshPlex();
-  } catch (error) {
-    await publishFallbackDevices();
-    throw error;
-  }
+  await publishDevices();
 });
 
 gladys.onSetValue(async (device, feature, value) => {
   const blueprint = findBlueprintByDevice(gladys, device);
-  if (!blueprint || typeof blueprint.onSetValue !== 'function') {
-    throw new Error(`No command handler for ${device.external_id}`);
-  }
+  if (!blueprint?.onSetValue) throw new Error(`No command handler for ${device.external_id}`);
   await blueprint.onSetValue(gladys, { device, feature, value, config });
 });
 
@@ -56,54 +43,52 @@ for (const blueprint of DEVICE_BLUEPRINTS) {
   }
 }
 
-gladys.onAction('identify', (fields) => identifyDevice(gladys, fields.device, config));
-
 gladys.onAction('show_webhook_url', async () => {
-  const state = await refreshWebhookState();
-  const url = state.webhooks?.find((webhook) => webhook.key === 'plex_events')?.url;
-  if (!state.available || !url) {
+  const webhookState = await gladys.getWebhooks();
+  const url = webhookState.webhooks?.find((webhook) => webhook.key === 'plex_events')?.url;
+  if (!webhookState.available || !url) {
     return {
-      en: 'Webhook relay unavailable. Link Gladys Plus and configure its Open API key first; polling remains enabled.',
+      en: 'Webhook relay unavailable. Link Gladys Plus and configure its Open API key; polling remains enabled.',
       fr: 'Relais webhook indisponible. Associez Gladys Plus et configurez sa clé Open API ; le polling reste actif.',
     };
   }
   return {
-    en: `Copy this URL into Plex Web > Account > Webhooks: ${url}`,
+    en: `Copy this URL to Plex Web > Account > Webhooks: ${url}`,
     fr: `Copiez cette URL dans Plex Web > Compte > Webhooks : ${url}`,
   };
 });
 
 gladys.onWebhook('plex_events', async ({ body }) => {
   try {
-    const payload = parsePlexWebhookBody(body);
-    for (const blueprint of DEVICE_BLUEPRINTS) {
-      if (typeof blueprint.onWebhook === 'function')
-        await blueprint.onWebhook(gladys, config, payload);
-    }
+    const playback = playbackFromWebhook(parsePlexWebhook(body));
+    if (!playback) return;
+    await DEVICE_BLUEPRINTS[0].onWebhook(gladys, playback);
   } catch (error) {
-    logger.error(`Invalid Plex webhook ignored: ${error.message}`);
+    logger.error(`Plex webhook ignored: ${error.message}`);
   }
 });
 
-gladys.onWebhookUpdated(async () => {
-  await refreshWebhookState();
-  await refreshPlex();
+gladys.onWebhookUpdated(async (webhookState) => {
+  await updateWebhookRelayAvailability(webhookState);
+  await publishDevices();
 });
 
 gladys.onConfigUpdated(async (newConfig) => {
   config = normalizeConfig(newConfig);
-  await refreshPlex();
+  await publishDevices();
+  await DEVICE_BLUEPRINTS[0].onPoll(gladys, config);
 });
 
 gladys.on('connected', async () => {
   try {
     config = normalizeConfig(await gladys.getConfig());
-    await refreshWebhookState();
-    await refreshPlex();
+    await updateWebhookRelayAvailability();
+    await publishDevices();
+    await DEVICE_BLUEPRINTS[0].actions.test_plex(gladys, { config });
+    await DEVICE_BLUEPRINTS[0].onPoll(gladys, config);
     await gladys.setConnectionStatus(true);
   } catch (error) {
     logger.error('Plex initialization failed', error);
-    await publishFallbackDevices().catch(() => {});
     await gladys.setConnectionStatus(false, {
       en: 'Plex connection failed. Check the URL, token and integration logs.',
       fr: 'La connexion Plex a échoué. Vérifiez l’URL, le token et les logs de l’intégration.',

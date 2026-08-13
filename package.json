@@ -2,7 +2,7 @@
   "name": "gladys-integration-plex",
   "version": "1.0.0",
   "private": true,
-  "description": "External Plex playback integration for Gladys Assistant.",
+  "description": "Plex playback integration for Gladys Assistant.",
   "type": "module",
   "main": "index.js",
   "scripts": {

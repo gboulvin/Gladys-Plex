@@ -1,11 +1,23 @@
-# Plex integration
+# Plex
 
-The integration creates one `Plex server` device and one device for every known Plex player. Configure the Plex Media Server LAN address, for example `http://192.168.1.20:32400`, not `localhost`, which refers to the integration container. It queries `/clients` during discovery, so a player can be created even when nothing is playing. Each device provides a binary playback state, detailed status, current title, and Play, Pause and Stop controls.
+The integration publishes one virtual **Plex server** device in Gladys Discovery. Add it to use its **Playback state** in a scene: the value is `1` while Plex is playing media and `0` while it is paused, stopped, or has no session. **Stop playback** terminates the active Plex session.
 
-The playback state is `1` while media is playing and `0` otherwise. It can be used directly as a condition in a Gladys scene.
+## Connect to Plex
+
+Enter the Plex Media Server LAN URL, for example `http://192.168.1.20:32400`, and your `X-Plex-Token`. Do not use `localhost`: the integration runs in a separate container. If Plex shares a Docker network with Gladys, use the Plex service name instead, for example `http://plex:32400`.
+
+The **Test Plex connection** action calls the Plex `/identity` endpoint. Once the configuration is saved, open Gladys Discovery and add the `Plex server` device.
+
+## Playback state and scenes
+
+The integration reads sessions from the official Plex API every 60 seconds. Gladys scenes can use the numeric **Playback state**; for example, start a cinema scene when it becomes `1` and restore the room state when it becomes `0`.
 
 ## Real-time webhooks
 
-Plex can send `media.play`, `media.resume`, `media.pause` and `media.stop` events to the `plex_events` webhook. This Plex capability requires Plex Pass. In Gladys, link Gladys Plus and enter its Open API key, then run **Show Plex webhook URL**. Copy the returned URL to **Plex Web > Account > Webhooks**.
+Plex webhooks require Plex Pass. Use **Show Plex webhook URL** and paste the returned URL in **Plex Web → Account → Webhooks**. The `media.play`, `media.resume`, `media.pause`, and `media.stop` events immediately update Gladys. The 60-second polling remains available as a fallback when the webhook relay is unavailable.
 
-When the public webhook relay is available, the integration automatically removes polling from its devices and publishes Plex playback changes as soon as they arrive. If Plex Pass, Gladys Plus or the configured webhook are unavailable, the configured polling interval remains active as a fallback.
+## Troubleshooting
+
+A refused connection means the Plex URL or port cannot be reached from the Gladys host. Check that port 32400 is reachable and that the configured URL is the Plex machine LAN address, then run the test action again. If real-time events do not arrive, check Plex Pass, the webhook URL saved in Plex Web, and the Gladys webhook relay availability.
+
+See the official [Plex Media Server documentation](https://developer.plex.tv/pms/) and [Plex webhook documentation](https://support.plex.tv/articles/115002267687-webhooks/) for API details.

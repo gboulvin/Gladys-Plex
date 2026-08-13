@@ -1,12 +1,12 @@
-const JSON_HEADERS = { Accept: 'application/json' };
+const ACCEPT_JSON = 'application/json';
 
-function buildHeaders(config) {
+function headers(config) {
   return {
-    ...JSON_HEADERS,
-    'X-Plex-Token': config.token,
+    Accept: ACCEPT_JSON,
     'X-Plex-Client-Identifier': config.client_identifier,
     'X-Plex-Product': 'Gladys Plex Integration',
     'X-Plex-Version': '1.0.0',
+    'X-Plex-Token': config.token,
   };
 }
 
@@ -16,29 +16,27 @@ async function request(config, path, options = {}) {
       'Plex Media Server URL is required. Use its LAN address, for example http://192.168.1.20:32400.',
     );
   }
-  let server;
+  let url;
   try {
-    server = new URL(config.server_url);
+    url = new URL(path, `${config.server_url}/`);
   } catch (error) {
     throw new Error(`Invalid Plex Media Server URL: ${config.server_url}`, { cause: error });
   }
-  if (['localhost', '127.0.0.1', '::1'].includes(server.hostname)) {
+  if (['localhost', '127.0.0.1', '::1'].includes(url.hostname)) {
     throw new Error(
-      `Plex URL ${config.server_url} points to the integration container. Use the Plex server LAN address instead, for example http://192.168.1.20:32400.`,
+      `Plex URL ${config.server_url} points to the integration container. Use the Plex server LAN address instead.`,
     );
   }
-  const target = `${config.server_url}${path}`;
   let response;
   try {
-    response = await fetch(target, {
+    response = await fetch(url, {
       ...options,
-      headers: { ...buildHeaders(config), ...(options.headers ?? {}) },
+      headers: { ...headers(config), ...(options.headers ?? {}) },
     });
   } catch (error) {
-    const code = error.cause?.code;
-    if (code === 'ECONNREFUSED') {
+    if (error.cause?.code === 'ECONNREFUSED') {
       throw new Error(
-        `Connection refused by Plex at ${config.server_url}. Check the LAN address, port 32400 and Plex network access from the Gladys host.`,
+        `Connection refused by Plex at ${config.server_url}. Check the LAN address, port 32400 and firewall.`,
         { cause: error },
       );
     }
@@ -53,54 +51,30 @@ async function request(config, path, options = {}) {
   return response;
 }
 
-export async function getServerIdentity(config) {
+export async function getIdentity(config) {
   const response = await request(config, '/identity');
   return (await response.json()).MediaContainer ?? {};
 }
 
 export async function getSessions(config) {
   const response = await request(config, '/status/sessions');
-  const container = (await response.json()).MediaContainer ?? {};
-  const metadata = container.Metadata ?? [];
-  return Array.isArray(metadata) ? metadata : [metadata];
+  const sessions = (await response.json()).MediaContainer?.Metadata ?? [];
+  return Array.isArray(sessions) ? sessions : [sessions];
 }
 
-export async function getClients(config) {
-  const response = await request(config, '/clients');
-  const container = (await response.json()).MediaContainer ?? {};
-  const clients = container.Server ?? [];
-  return Array.isArray(clients) ? clients : [clients];
+export async function stopSession(config, sessionId) {
+  if (!sessionId) throw new Error('Cannot stop a Plex session without a session id');
+  const query = new URLSearchParams({ sessionId, reason: 'Stopped by Gladys' });
+  await request(config, `/status/sessions/terminate?${query.toString()}`, { method: 'POST' });
 }
 
-export async function sendTimeline(config, session, state) {
-  const params = new URLSearchParams({
-    key: session.key ?? '',
-    ratingKey: String(session.ratingKey ?? ''),
-    state,
-    time: String(session.viewOffset ?? 0),
-    duration: String(session.duration ?? 0),
-  });
-  await request(config, `/:/timeline?${params.toString()}`, { method: 'POST' });
-}
-
-export async function terminateSession(config, sessionId) {
-  const params = new URLSearchParams({ sessionId, reason: 'Controlled by Gladys' });
-  await request(config, `/status/sessions/terminate?${params.toString()}`, { method: 'POST' });
-}
-
-export function normalizeSession(session) {
-  const player = session.Player ?? {};
+export function normalizeSession(raw) {
+  const player = raw.Player ?? {};
   return {
-    sessionId: session.session?.id ?? session.Session?.id ?? null,
-    key: session.key ?? null,
-    ratingKey: session.ratingKey ?? null,
-    title: session.grandparentTitle
-      ? `${session.grandparentTitle} — ${session.title}`
-      : (session.title ?? 'Plex'),
-    state: session.Player?.state ?? 'stopped',
-    viewOffset: Number(session.viewOffset ?? 0),
-    duration: Number(session.duration ?? 0),
+    sessionId: raw.Session?.id ?? raw.session?.id ?? null,
     playerId: player.machineIdentifier ?? player.uuid ?? player.title ?? null,
     playerTitle: player.title ?? player.product ?? 'Plex player',
+    state: player.state ?? 'stopped',
+    title: raw.grandparentTitle ? `${raw.grandparentTitle} — ${raw.title}` : (raw.title ?? ''),
   };
 }

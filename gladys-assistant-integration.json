@@ -3,8 +3,8 @@
   "type": "device",
   "name": "Plex",
   "description": {
-    "en": "Control Plex playback and expose the current playback state to Gladys scenes.",
-    "fr": "Contrôlez la lecture Plex et exposez son état courant aux scènes Gladys."
+    "en": "Use Plex playback state in Gladys scenes, stop active playback, and receive Plex webhooks.",
+    "fr": "Utilisez l’état Plex dans les scènes Gladys, arrêtez la lecture et recevez les webhooks."
   },
   "version": "1.0.0",
   "docker_image": "ghcr.io/gboulvin/gladys-plex:1.0.0",
@@ -13,20 +13,17 @@
   "transports": ["local"],
   "config_schema": [
     {
-      "key": "intro",
+      "key": "connection",
       "type": "section",
       "label": { "en": "Plex connection", "fr": "Connexion Plex" },
       "description": {
-        "en": "Use the Plex Media Server address and an X-Plex-Token. The integration discovers the server and available players, then uses Plex webhooks in real time when the Gladys public relay is configured; polling is retained only as a fallback.",
-        "fr": "Utilisez l’adresse du Plex Media Server et un X-Plex-Token. L’intégration découvre le serveur et les lecteurs disponibles, puis utilise les webhooks Plex en temps réel lorsque le relais public Gladys est configuré ; le polling ne reste qu’un secours."
+        "en": "Use the LAN URL of Plex Media Server, not localhost. The integration runs in its own container.",
+        "fr": "Utilisez l’URL réseau locale du Plex Media Server, et non localhost. L’intégration s’exécute dans son propre conteneur."
       },
       "links": [
         {
           "url": "https://developer.plex.tv/pms/",
-          "label": {
-            "en": "Plex Media Server API documentation",
-            "fr": "Documentation de l’API Plex Media Server"
-          }
+          "label": { "en": "Plex Media Server API", "fr": "API Plex Media Server" }
         }
       ]
     },
@@ -35,8 +32,8 @@
       "type": "string",
       "label": { "en": "Plex Media Server URL", "fr": "URL du Plex Media Server" },
       "description": {
-        "en": "Use the Plex server LAN address, for example: http://192.168.1.20:32400. Do not use localhost: the integration runs in its own container.",
-        "fr": "Utilisez l’adresse réseau locale du serveur Plex, par exemple : http://192.168.1.20:32400. N’utilisez pas localhost : l’intégration s’exécute dans son propre conteneur."
+        "en": "For example: http://192.168.1.20:32400",
+        "fr": "Par exemple : http://192.168.1.20:32400"
       },
       "required": true
     },
@@ -56,26 +53,6 @@
       "label": { "en": "Client identifier", "fr": "Identifiant client" },
       "required": false,
       "default": "gladys-plex-integration"
-    },
-    {
-      "key": "player_name",
-      "type": "string",
-      "label": { "en": "Player filter", "fr": "Filtre du lecteur" },
-      "description": {
-        "en": "Optional Plex player title or machine identifier. Empty uses the first active session.",
-        "fr": "Titre Plex ou identifiant machine facultatif. Vide, la première session active est utilisée."
-      },
-      "required": false,
-      "default": ""
-    },
-    {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
-      "required": false,
-      "default": 30,
-      "min": 10,
-      "max": 3600
     }
   ],
   "webhooks": [
@@ -87,27 +64,14 @@
   ],
   "actions": [
     {
-      "key": "show_webhook_url",
-      "label": { "en": "Show Plex webhook URL", "fr": "Afficher l’URL webhook Plex" },
-      "timeout_seconds": 30
-    },
-    {
       "key": "test_plex",
       "label": { "en": "Test Plex connection", "fr": "Tester la connexion Plex" },
       "timeout_seconds": 30
     },
     {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
+      "key": "show_webhook_url",
+      "label": { "en": "Show Plex webhook URL", "fr": "Afficher l’URL webhook Plex" },
+      "timeout_seconds": 30
     }
   ]
 }
