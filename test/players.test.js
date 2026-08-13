@@ -87,3 +87,20 @@ test('onWebhook creates a player device and publishes its playing state', async 
     ),
   );
 });
+
+test('all discovered features have a defined Gladys type', () => {
+  const gladys = createFakeGladys();
+  const devices = plexPlayer.buildDiscoveredDevices(gladys, normalizeConfig());
+  for (const device of devices) {
+    for (const feature of device.features) {
+      assert.equal(typeof feature.type, 'string', `${feature.name} must declare a valid type`);
+      assert.ok(feature.type.length > 0, `${feature.name} must not have an empty type`);
+    }
+  }
+  const server = devices.find((device) => device.name === 'Plex server');
+  const stop = server.features.find((feature) => feature.external_id.endsWith(':stop'));
+  assert.deepEqual(
+    { category: stop.category, type: stop.type },
+    { category: 'television', type: 'stop' },
+  );
+});

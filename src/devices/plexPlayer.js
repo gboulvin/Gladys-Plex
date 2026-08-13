@@ -70,8 +70,14 @@ function buildFeatures(ids, label) {
     ...[FEATURE.PLAY, FEATURE.PAUSE, FEATURE.STOP].map((command) => ({
       name: `${label} - ${command[0].toUpperCase() + command.slice(1)}`,
       external_id: ids.feature(command),
-      category: DEVICE_FEATURE_CATEGORIES.MUSIC,
-      type: DEVICE_FEATURE_TYPES.MUSIC[command.toUpperCase()],
+      category:
+        command === FEATURE.STOP
+          ? DEVICE_FEATURE_CATEGORIES.TELEVISION
+          : DEVICE_FEATURE_CATEGORIES.MUSIC,
+      type:
+        command === FEATURE.STOP
+          ? DEVICE_FEATURE_TYPES.TELEVISION.STOP
+          : DEVICE_FEATURE_TYPES.MUSIC[command.toUpperCase()],
       min: 1,
       max: 1,
       read_only: false,
