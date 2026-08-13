@@ -1,0 +1,102 @@
+{
+  "manifest_version": 1,
+  "type": "device",
+  "name": "Plex",
+  "description": {
+    "en": "Control Plex playback and expose the current playback state to Gladys scenes.",
+    "fr": "Contrôlez la lecture Plex et exposez son état courant aux scènes Gladys."
+  },
+  "version": "1.0.0",
+  "docker_image": "ghcr.io/gboulvin/gladys-plex:1.0.0",
+  "gladys_version": ">=4.85.0",
+  "cover_image": "https://raw.githubusercontent.com/gboulvin/Gladys-Plex/main/cover.png",
+  "transports": ["local"],
+  "config_schema": [
+    {
+      "key": "intro",
+      "type": "section",
+      "label": { "en": "Plex connection", "fr": "Connexion Plex" },
+      "description": {
+        "en": "Use the Plex Media Server address and an X-Plex-Token. The integration polls /status/sessions and controls the active player.",
+        "fr": "Utilisez l’adresse du Plex Media Server et un X-Plex-Token. L’intégration interroge /status/sessions et contrôle le lecteur actif."
+      },
+      "links": [
+        {
+          "url": "https://developer.plex.tv/pms/",
+          "label": {
+            "en": "Plex Media Server API documentation",
+            "fr": "Documentation de l’API Plex Media Server"
+          }
+        }
+      ]
+    },
+    {
+      "key": "server_url",
+      "type": "string",
+      "label": { "en": "Plex Media Server URL", "fr": "URL du Plex Media Server" },
+      "description": {
+        "en": "For example: http://192.168.1.20:32400",
+        "fr": "Par exemple : http://192.168.1.20:32400"
+      },
+      "required": true,
+      "default": "http://localhost:32400"
+    },
+    {
+      "key": "token",
+      "type": "secret",
+      "label": { "en": "Plex token", "fr": "Token Plex" },
+      "description": {
+        "en": "The X-Plex-Token used to authenticate requests.",
+        "fr": "Le X-Plex-Token utilisé pour authentifier les requêtes."
+      },
+      "required": true
+    },
+    {
+      "key": "client_identifier",
+      "type": "string",
+      "label": { "en": "Client identifier", "fr": "Identifiant client" },
+      "required": false,
+      "default": "gladys-plex-integration"
+    },
+    {
+      "key": "player_name",
+      "type": "string",
+      "label": { "en": "Player filter", "fr": "Filtre du lecteur" },
+      "description": {
+        "en": "Optional Plex player title or machine identifier. Empty uses the first active session.",
+        "fr": "Titre Plex ou identifiant machine facultatif. Vide, la première session active est utilisée."
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "poll_frequency",
+      "type": "number",
+      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "required": false,
+      "default": 30,
+      "min": 10,
+      "max": 3600
+    }
+  ],
+  "actions": [
+    {
+      "key": "test_plex",
+      "label": { "en": "Test Plex connection", "fr": "Tester la connexion Plex" },
+      "timeout_seconds": 30
+    },
+    {
+      "key": "identify",
+      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": { "en": "Device", "fr": "Appareil" },
+          "required": true
+        }
+      ]
+    }
+  ]
+}
