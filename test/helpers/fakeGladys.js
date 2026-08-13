@@ -37,7 +37,10 @@ export function createFakeGladys() {
 
     async publishStates(states) {
       for (const s of states) {
-        published.push({ featureExternalId: s.device_feature_external_id, state: s.state });
+        published.push({
+          featureExternalId: s.device_feature_external_id,
+          ...(s.state !== undefined ? { state: s.state } : { text: s.text }),
+        });
       }
     },
 

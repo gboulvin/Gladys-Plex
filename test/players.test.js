@@ -109,3 +109,21 @@ test('all discovered features have a defined Gladys type', () => {
     { category: 'television', type: 'stop' },
   );
 });
+
+test('Plex status and title are published as text states', async () => {
+  const gladys = createFakeGladys();
+  gladys.publishDiscoveredDevices = async () => {};
+  await plexPlayer.onWebhook(gladys, normalizeConfig(), {
+    event: 'media.pause',
+    Player: { uuid: 'text-player', title: 'Office TV' },
+    Metadata: { title: 'Episode' },
+  });
+  assert.deepEqual(
+    gladys.published.find((entry) => entry.featureExternalId === 'plex-player:text-player:status'),
+    { featureExternalId: 'plex-player:text-player:status', text: 'paused' },
+  );
+  assert.deepEqual(
+    gladys.published.find((entry) => entry.featureExternalId === 'plex-player:text-player:title'),
+    { featureExternalId: 'plex-player:text-player:title', text: 'Episode' },
+  );
+});

@@ -121,8 +121,8 @@ function publishStatesForDevice(gladys, platformId, session) {
   const ids = gladys.externalIds(DEVICE_TYPE, platformId);
   return gladys.publishStates([
     { device_feature_external_id: ids.feature(FEATURE.PLAYBACK_STATE), state: isPlaying(session) },
-    { device_feature_external_id: ids.feature(FEATURE.STATUS), state: toStatus(session) },
-    { device_feature_external_id: ids.feature(FEATURE.TITLE), state: session?.title ?? '' },
+    { device_feature_external_id: ids.feature(FEATURE.STATUS), text: toStatus(session) },
+    { device_feature_external_id: ids.feature(FEATURE.TITLE), text: session?.title ?? '' },
   ]);
 }
 
