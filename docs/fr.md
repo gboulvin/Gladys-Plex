@@ -1,7 +1,11 @@
 # Intégration Plex
 
-Configurez l’URL du Plex Media Server, un `X-Plex-Token`, un identifiant client stable et, si nécessaire, un filtre de lecteur. L’intégration crée un appareil `Plex playback` dans Gladys.
+L’intégration crée un appareil `Plex server` et un appareil par lecteur Plex connu. La découverte appelle `/clients`, donc les lecteurs peuvent apparaître même si aucune lecture n’est active. Chaque appareil expose un état de lecture binaire, un statut texte, le titre courant et les commandes Play, Pause et Stop.
 
-L’appareil interroge `GET /status/sessions` et publie l’état de lecture ainsi que le titre courant. Cet état est disponible dans les scènes Gladys, qui peuvent donc réagir au démarrage, à la pause ou à l’arrêt d’une lecture. Les features Play, Pause et Stop envoient les commandes au lecteur Plex actif renvoyé par la session.
+L’état de lecture vaut `1` pendant une lecture et `0` dans les autres cas. Il est directement exploitable dans une scène Gladys pour déclencher, par exemple, une ambiance cinéma.
 
-La documentation officielle de l’API Plex est disponible à l’adresse https://developer.plex.tv/pms/. Le lecteur Plex doit exposer une adresse réseau joignable depuis le conteneur de l’intégration Gladys pour que les commandes distantes fonctionnent.
+## Webhooks temps réel
+
+Plex peut envoyer les événements `media.play`, `media.resume`, `media.pause` et `media.stop` au webhook `plex_events`. Cette fonction nécessite Plex Pass. Dans Gladys, associez Gladys Plus et renseignez la clé Open API, puis utilisez l’action **Afficher l’URL webhook Plex**. Copiez l’URL affichée dans **Plex Web > Compte > Webhooks**.
+
+Lorsque le relais webhook est disponible, l’intégration retire automatiquement le polling des appareils et publie les changements d’état dès la réception des événements Plex. Si Plex Pass, Gladys Plus ou le webhook ne sont pas disponibles, l’intégration utilise le polling configuré comme mécanisme de secours.

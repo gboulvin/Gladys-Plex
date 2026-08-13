@@ -1,7 +1,11 @@
 # Plex integration
 
-Configure the Plex Media Server URL, an `X-Plex-Token`, a stable client identifier and an optional player filter. The integration creates one `Plex playback` device in Gladys.
+The integration creates one `Plex server` device and one device for every known Plex player. It queries `/clients` during discovery, so a player can be created even when nothing is playing. Each device provides a binary playback state, detailed status, current title, and Play, Pause and Stop controls.
 
-The device polls `GET /status/sessions` and publishes the current playback state and title. The state is available to Gladys scenes, so a scene can react when playback starts or stops. Play, Pause and Stop features send commands to the active Plex player returned by the session.
+The playback state is `1` while media is playing and `0` otherwise. It can be used directly as a condition in a Gladys scene.
 
-The official Plex API documentation is available at https://developer.plex.tv/pms/. The Plex player must expose a network address reachable from the Gladys integration container for remote commands to work.
+## Real-time webhooks
+
+Plex can send `media.play`, `media.resume`, `media.pause` and `media.stop` events to the `plex_events` webhook. This Plex capability requires Plex Pass. In Gladys, link Gladys Plus and enter its Open API key, then run **Show Plex webhook URL**. Copy the returned URL to **Plex Web > Account > Webhooks**.
+
+When the public webhook relay is available, the integration automatically removes polling from its devices and publishes Plex playback changes as soon as they arrive. If Plex Pass, Gladys Plus or the configured webhook are unavailable, the configured polling interval remains active as a fallback.

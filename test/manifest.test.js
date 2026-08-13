@@ -15,7 +15,7 @@ const manifest = JSON.parse(
 );
 
 // Actions registered outside the blueprints (see index.js).
-const REGISTRY_LEVEL_ACTIONS = ['identify'];
+const REGISTRY_LEVEL_ACTIONS = ['identify', 'show_webhook_url'];
 
 test('every manifest action has a registered handler', () => {
   const handled = new Set([

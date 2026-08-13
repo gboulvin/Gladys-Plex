@@ -1,33 +1,34 @@
 # Intégration externe Plex pour Gladys
 
-Cette intégration, construite à partir du [template officiel JavaScript de Gladys](https://github.com/GladysAssistant/integration-template-js), connecte Gladys à un **Plex Media Server** et expose un appareil virtuel `Plex playback`.
+Cette intégration, construite à partir du [template officiel JavaScript de Gladys](https://github.com/GladysAssistant/integration-template-js), connecte Gladys à un **Plex Media Server** et crée un appareil `Plex server` ainsi qu’un appareil pour chaque lecteur Plex connu. Les lecteurs sont découverts via l’endpoint Plex `/clients`, même lorsqu’aucun média n’est en cours de lecture.
 
-L’appareil publie l’état de lecture courant (`playing`, `paused`, `buffering` ou absence de session), le titre en cours et des features de commande Play, Pause et Stop. Ces états peuvent donc être utilisés comme conditions de scènes Gladys.
+Chaque appareil publie un état binaire de lecture, un statut détaillé et le titre courant. L’état binaire vaut `1` pendant une lecture et `0` en pause, arrêté ou sans lecture ; il peut être utilisé directement comme condition dans les scènes Gladys. Les appareils offrent aussi les commandes Play, Pause et Stop lorsque le lecteur est joignable par le conteneur Gladys.
 
-## Configuration
+## Configuration de base
 
-Dans Gladys, renseignez l’URL du serveur Plex, par exemple `http://192.168.1.20:32400`, ainsi que le `X-Plex-Token`. Le token est envoyé dans les headers Plex avec un identifiant client stable. Le champ **Player filter** est facultatif : il accepte le titre ou l’identifiant machine du lecteur Plex. Lorsqu’il est vide, l’intégration sélectionne la première session active renvoyée par le serveur.
+Renseignez l’URL du Plex Media Server, par exemple `http://192.168.1.20:32400`, et le `X-Plex-Token`. Le token est envoyé avec un identifiant client stable. Le filtre de lecteur est facultatif : il cible le titre ou l’identifiant machine d’un lecteur pour l’appareil agrégé `Plex server`.
 
-L’intervalle par défaut est de 30 secondes. Il peut être augmenté selon le besoin, mais un intervalle court est préférable si les scènes doivent réagir rapidement aux changements d’état.
+Le polling configuré par défaut à 30 secondes constitue un **secours**. Il est automatiquement retiré des appareils dès que le relais webhook Gladys est disponible.
 
-## API utilisée
+## Webhooks Plex en temps réel
 
-L’intégration utilise directement l’API officielle Plex Media Server. Les sessions actives sont lues avec `GET /status/sessions`. Plex documente la réponse JSON et l’authentification via `X-Plex-Token` et `X-Plex-Client-Identifier` dans sa [documentation officielle](https://developer.plex.tv/pms/).
+Plex envoie les événements `media.play`, `media.resume`, `media.pause` et `media.stop` sous la forme d’une requête `POST` multipart contenant un champ JSON `payload`. Cette intégration les accepte via le webhook `plex_events` et met aussitôt à jour le lecteur concerné ainsi que l’appareil `Plex server`. La documentation Plex précise que cette fonctionnalité requiert un abonnement **Plex Pass** et se configure dans **Plex Web > Account > Webhooks**. [1]
 
-Les commandes de lecture sont envoyées au lecteur actif via les routes de contrôle du lecteur Plex (`/player/playback/play`, `/player/playback/pause` et `/player/playback/stop`). L’API officielle documente également `POST /:/timeline`, qui sert à rapporter l’état et la position de lecture, ainsi que `POST /status/sessions/terminate` pour terminer une session côté serveur.
+Dans Gladys, associez Gladys Plus et renseignez la clé Open API demandée par la section webhooks de l’intégration. Cliquez ensuite sur **Afficher l’URL webhook Plex**, puis copiez l’URL retournée dans **Plex Web > Account > Webhooks**. Dès que le relais public est disponible, les appareils sont republiés sans fréquence de polling.
 
-> Le contrôle dépend du fait que le lecteur Plex renvoie une adresse réseau joignable depuis le conteneur Gladys. La simple lecture des sessions fonctionne, elle, via l’adresse du Plex Media Server.
+> Sans Plex Pass, sans Gladys Plus, ou tant que l’URL n’est pas ajoutée dans Plex, l’intégration reste pleinement opérationnelle grâce au polling de secours.
 
-## Structure principale
+## API et structure
 
-| Fichier                             | Rôle                                                             |
-| ----------------------------------- | ---------------------------------------------------------------- |
-| `gladys-assistant-integration.json` | Manifeste, schéma de configuration et action de test.            |
-| `src/plex.js`                       | Client HTTP Plex, parsing des sessions et fonctions de timeline. |
-| `src/devices/plexPlayer.js`         | Blueprint Gladys : features, polling et commandes.               |
-| `src/devices/index.js`              | Registre et routage des appareils.                               |
-| `index.js`                          | Initialisation du SDK Gladys et branchement des handlers.        |
-| `test/plex.test.js`                 | Tests de parsing des sessions Plex.                              |
+L’intégration utilise `GET /clients` pour créer les lecteurs, `GET /status/sessions` pour les réconcilier avec l’état de lecture et les headers `X-Plex-Token` / `X-Plex-Client-Identifier` pour l’authentification. [2]
+
+| Fichier                             | Rôle                                                                       |
+| ----------------------------------- | -------------------------------------------------------------------------- |
+| `src/plex.js`                       | Client HTTP Plex : identité, clients et sessions.                          |
+| `src/devices/plexPlayer.js`         | Découverte persistante, publication d’états, commandes et parsing webhook. |
+| `index.js`                          | Connexion Gladys, scan, fallback de polling et relayage `plex_events`.     |
+| `gladys-assistant-integration.json` | Manifeste, webhooks et actions de configuration.                           |
+| `test/players.test.js`              | Tests de découverte sans lecture active et de payloads multipart Plex.     |
 
 ## Développement local
 
@@ -38,21 +39,13 @@ npm run lint
 npm test
 ```
 
-Pour lancer l’intégration dans un environnement Gladys local :
-
-```bash
-GLADYS_HOST_API_URL="http://localhost:1443" \
-GLADYS_INTEGRATION_TOKEN="<token Gladys>" \
-GLADYS_INTEGRATION_SELECTOR="plex" \
-LOG_LEVEL=debug \
-npm start
-```
-
 ## Références
 
-1. [Plex Media Server API — documentation officielle](https://developer.plex.tv/pms/)
-2. [Template officiel d’intégration JavaScript Gladys](https://github.com/GladysAssistant/integration-template-js)
-3. [node-plex-api — projet de référence secondaire](https://github.com/phillipj/node-plex-api)
+[1] [Plex Support — Webhooks](https://support.plex.tv/articles/115002267687-webhooks/)
+
+[2] [Plex Media Server API — documentation officielle](https://developer.plex.tv/pms/)
+
+[3] [Template officiel d’intégration JavaScript Gladys](https://github.com/GladysAssistant/integration-template-js)
 
 ## Licence
 

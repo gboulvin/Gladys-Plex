@@ -34,6 +34,13 @@ export async function getSessions(config) {
   return Array.isArray(metadata) ? metadata : [metadata];
 }
 
+export async function getClients(config) {
+  const response = await request(config, '/clients');
+  const container = (await response.json()).MediaContainer ?? {};
+  const clients = container.Server ?? [];
+  return Array.isArray(clients) ? clients : [clients];
+}
+
 export async function sendTimeline(config, session, state) {
   const params = new URLSearchParams({
     key: session.key ?? '',

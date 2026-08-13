@@ -17,8 +17,8 @@
       "type": "section",
       "label": { "en": "Plex connection", "fr": "Connexion Plex" },
       "description": {
-        "en": "Use the Plex Media Server address and an X-Plex-Token. The integration polls /status/sessions and controls the active player.",
-        "fr": "Utilisez l’adresse du Plex Media Server et un X-Plex-Token. L’intégration interroge /status/sessions et contrôle le lecteur actif."
+        "en": "Use the Plex Media Server address and an X-Plex-Token. The integration discovers the server and available players, then uses Plex webhooks in real time when the Gladys public relay is configured; polling is retained only as a fallback.",
+        "fr": "Utilisez l’adresse du Plex Media Server et un X-Plex-Token. L’intégration découvre le serveur et les lecteurs disponibles, puis utilise les webhooks Plex en temps réel lorsque le relais public Gladys est configuré ; le polling ne reste qu’un secours."
       },
       "links": [
         {
@@ -79,7 +79,19 @@
       "max": 3600
     }
   ],
+  "webhooks": [
+    {
+      "key": "plex_events",
+      "label": { "en": "Plex playback events", "fr": "Événements de lecture Plex" },
+      "mode": "fire_and_forget"
+    }
+  ],
   "actions": [
+    {
+      "key": "show_webhook_url",
+      "label": { "en": "Show Plex webhook URL", "fr": "Afficher l’URL webhook Plex" },
+      "timeout_seconds": 30
+    },
     {
       "key": "test_plex",
       "label": { "en": "Test Plex connection", "fr": "Tester la connexion Plex" },
