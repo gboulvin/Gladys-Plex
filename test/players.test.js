@@ -95,6 +95,8 @@ test('all discovered features have a defined Gladys type', () => {
     for (const feature of device.features) {
       assert.equal(typeof feature.type, 'string', `${feature.name} must declare a valid type`);
       assert.ok(feature.type.length > 0, `${feature.name} must not have an empty type`);
+      assert.equal(typeof feature.min, 'number', `${feature.name} must declare a numeric min`);
+      assert.equal(typeof feature.max, 'number', `${feature.name} must declare a numeric max`);
     }
   }
   const server = devices.find((device) => device.name === 'Plex server');
