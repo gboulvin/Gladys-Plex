@@ -38,7 +38,10 @@ test('refresh discovers the Plex server and known Plex clients without active pl
     discovered = devices;
   };
 
-  await plexPlayer.refresh(gladys, normalizeConfig({ token: 'token' }));
+  await plexPlayer.refresh(
+    gladys,
+    normalizeConfig({ server_url: 'http://192.168.1.20:32400', token: 'token' }),
+  );
 
   assert.deepEqual(discovered.map((device) => device.name).sort(), [
     'Living room TV',

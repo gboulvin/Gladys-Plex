@@ -6,7 +6,7 @@ Chaque appareil publie un état binaire de lecture, un statut détaillé et le t
 
 ## Configuration de base
 
-Renseignez l’URL du Plex Media Server, par exemple `http://192.168.1.20:32400`, et le `X-Plex-Token`. Le token est envoyé avec un identifiant client stable. Le filtre de lecteur est facultatif : il cible le titre ou l’identifiant machine d’un lecteur pour l’appareil agrégé `Plex server`.
+Renseignez l’URL réseau du Plex Media Server, par exemple `http://192.168.1.20:32400`, et le `X-Plex-Token`. **N’utilisez pas `http://localhost:32400`** : l’intégration s’exécute dans son propre conteneur, donc `localhost` désigne ce conteneur et non la machine qui héberge Plex. Utilisez l’adresse LAN de la machine Plex, joignable depuis l’hôte Gladys. Le token est envoyé avec un identifiant client stable. Le filtre de lecteur est facultatif : il cible le titre ou l’identifiant machine d’un lecteur pour l’appareil agrégé `Plex server`.
 
 Le polling configuré par défaut à 30 secondes constitue un **secours**. Il est automatiquement retiré des appareils dès que le relais webhook Gladys est disponible.
 

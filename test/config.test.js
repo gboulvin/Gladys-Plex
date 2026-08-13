@@ -15,7 +15,7 @@ test('normalizeConfig coerces Plex form values', () => {
 });
 
 test('normalizeConfig provides stable Plex defaults', () => {
-  assert.equal(DEFAULT_CONFIG.server_url, 'http://localhost:32400');
+  assert.equal(DEFAULT_CONFIG.server_url, '');
   assert.equal(DEFAULT_CONFIG.client_identifier, 'gladys-plex-integration');
   assert.equal(DEFAULT_CONFIG.player_name, '');
 });

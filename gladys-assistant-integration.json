@@ -35,11 +35,10 @@
       "type": "string",
       "label": { "en": "Plex Media Server URL", "fr": "URL du Plex Media Server" },
       "description": {
-        "en": "For example: http://192.168.1.20:32400",
-        "fr": "Par exemple : http://192.168.1.20:32400"
+        "en": "Use the Plex server LAN address, for example: http://192.168.1.20:32400. Do not use localhost: the integration runs in its own container.",
+        "fr": "Utilisez l’adresse réseau locale du serveur Plex, par exemple : http://192.168.1.20:32400. N’utilisez pas localhost : l’intégration s’exécute dans son propre conteneur."
       },
-      "required": true,
-      "default": "http://localhost:32400"
+      "required": true
     },
     {
       "key": "token",

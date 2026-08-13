@@ -1,6 +1,6 @@
 # Plex integration
 
-The integration creates one `Plex server` device and one device for every known Plex player. It queries `/clients` during discovery, so a player can be created even when nothing is playing. Each device provides a binary playback state, detailed status, current title, and Play, Pause and Stop controls.
+The integration creates one `Plex server` device and one device for every known Plex player. Configure the Plex Media Server LAN address, for example `http://192.168.1.20:32400`, not `localhost`, which refers to the integration container. It queries `/clients` during discovery, so a player can be created even when nothing is playing. Each device provides a binary playback state, detailed status, current title, and Play, Pause and Stop controls.
 
 The playback state is `1` while media is playing and `0` otherwise. It can be used directly as a condition in a Gladys scene.
 

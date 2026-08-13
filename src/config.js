@@ -1,5 +1,5 @@
 export const DEFAULT_CONFIG = {
-  server_url: 'http://localhost:32400',
+  server_url: '',
   token: '',
   client_identifier: 'gladys-plex-integration',
   player_name: '',

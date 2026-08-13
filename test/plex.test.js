@@ -1,6 +1,12 @@
-import { test } from 'node:test';
+import { afterEach, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeSession } from '../src/plex.js';
+import { getServerIdentity, normalizeSession } from '../src/plex.js';
+
+const realFetch = globalThis.fetch;
+
+afterEach(() => {
+  globalThis.fetch = realFetch;
+});
 
 test('normalizeSession parses a standard Plex session', () => {
   const raw = {
@@ -33,4 +39,23 @@ test('normalizeSession handles TV show titles', () => {
   const normalized = normalizeSession(raw);
   assert.equal(normalized.title, 'Breaking Bad — Pilot');
   assert.equal(normalized.state, 'paused');
+});
+
+test('getServerIdentity rejects localhost because the integration runs in a container', async () => {
+  await assert.rejects(
+    () => getServerIdentity({ server_url: 'http://localhost:32400', token: 'token' }),
+    /points to the integration container/,
+  );
+});
+
+test('getServerIdentity explains a refused Plex network connection', async () => {
+  globalThis.fetch = async () => {
+    const error = new TypeError('fetch failed');
+    error.cause = { code: 'ECONNREFUSED' };
+    throw error;
+  };
+  await assert.rejects(
+    () => getServerIdentity({ server_url: 'http://192.168.1.20:32400', token: 'token' }),
+    /Connection refused by Plex.*port 32400/,
+  );
 });

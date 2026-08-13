@@ -11,10 +11,41 @@ function buildHeaders(config) {
 }
 
 async function request(config, path, options = {}) {
-  const response = await fetch(`${config.server_url}${path}`, {
-    ...options,
-    headers: { ...buildHeaders(config), ...(options.headers ?? {}) },
-  });
+  if (!config.server_url) {
+    throw new Error(
+      'Plex Media Server URL is required. Use its LAN address, for example http://192.168.1.20:32400.',
+    );
+  }
+  let server;
+  try {
+    server = new URL(config.server_url);
+  } catch (error) {
+    throw new Error(`Invalid Plex Media Server URL: ${config.server_url}`, { cause: error });
+  }
+  if (['localhost', '127.0.0.1', '::1'].includes(server.hostname)) {
+    throw new Error(
+      `Plex URL ${config.server_url} points to the integration container. Use the Plex server LAN address instead, for example http://192.168.1.20:32400.`,
+    );
+  }
+  const target = `${config.server_url}${path}`;
+  let response;
+  try {
+    response = await fetch(target, {
+      ...options,
+      headers: { ...buildHeaders(config), ...(options.headers ?? {}) },
+    });
+  } catch (error) {
+    const code = error.cause?.code;
+    if (code === 'ECONNREFUSED') {
+      throw new Error(
+        `Connection refused by Plex at ${config.server_url}. Check the LAN address, port 32400 and Plex network access from the Gladys host.`,
+        { cause: error },
+      );
+    }
+    throw new Error(`Unable to reach Plex at ${config.server_url}: ${error.message}`, {
+      cause: error,
+    });
+  }
   if (!response.ok) {
     const body = await response.text().catch(() => '');
     throw new Error(`Plex HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ''}`);
