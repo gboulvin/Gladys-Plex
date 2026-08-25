@@ -79,11 +79,7 @@ async function initialize() {
   try {
     await plexServer.actions.test_plex(gladys, { config });
     if (generation !== initializationGeneration) return;
-    const nextMonitor = new PlexMonitor(
-      gladys,
-      config,
-      plexServer.playbackFeatureExternalId(gladys),
-    );
+    const nextMonitor = new PlexMonitor(gladys, config, plexServer.featureExternalIds(gladys));
     monitor = nextMonitor;
     await publishDevices();
     await nextMonitor.refresh({ forcePublish: true });

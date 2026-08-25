@@ -59,7 +59,13 @@ test('normalizeSession extracts the session, player, state and title', () => {
       Session: { id: 'session-1' },
       title: 'Pilot',
       grandparentTitle: 'Show',
-      Player: { machineIdentifier: 'player-1', title: 'Living room', state: 'playing' },
+      type: 'track',
+      Player: {
+        machineIdentifier: 'player-1',
+        title: 'Living room',
+        state: 'playing',
+        volume: 37,
+      },
     }),
     {
       sessionId: 'session-1',
@@ -67,6 +73,8 @@ test('normalizeSession extracts the session, player, state and title', () => {
       playerTitle: 'Living room',
       state: 'playing',
       title: 'Show — Pilot',
+      mediaType: 'track',
+      volume: 37,
     },
   );
 });

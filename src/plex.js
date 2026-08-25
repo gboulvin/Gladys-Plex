@@ -1,6 +1,14 @@
 const ACCEPT_JSON = 'application/json';
 const READ_TIMEOUT_MS = 5_000;
 const COMMAND_TIMEOUT_MS = 2_500;
+let commandId = 0;
+
+const PLAYER_COMMAND_PATHS = {
+  play: '/player/playback/play',
+  pause: '/player/playback/pause',
+  previous: '/player/playback/skipPrevious',
+  next: '/player/playback/skipNext',
+};
 
 function headers(config) {
   return {
@@ -80,13 +88,42 @@ export async function stopSession(config, sessionId) {
   });
 }
 
+function commandMediaType(mediaType) {
+  if (mediaType === 'track') return 'music';
+  if (mediaType === 'photo') return 'photo';
+  return 'video';
+}
+
+/**
+ * Send a best-effort command to the Plex player currently attached to a session.
+ * Plex Media Server proxies this legacy player-control route to the target client.
+ */
+export async function playerCommand(config, playerId, command, mediaType, parameters = {}) {
+  if (!playerId) throw new Error('No active Plex player can receive this command');
+  const path = PLAYER_COMMAND_PATHS[command];
+  if (!path && command !== 'volume') throw new Error(`Unsupported Plex player command: ${command}`);
+  commandId += 1;
+  const query = new URLSearchParams({
+    type: commandMediaType(mediaType),
+    commandID: String(commandId),
+    ...Object.fromEntries(Object.entries(parameters).map(([key, value]) => [key, String(value)])),
+  });
+  await request(config, `${path ?? '/player/playback/setParameters'}?${query.toString()}`, {
+    timeoutMs: COMMAND_TIMEOUT_MS,
+    headers: { 'X-Plex-Target-Client-Identifier': playerId },
+  });
+}
+
 export function normalizeSession(raw) {
   const player = raw.Player ?? {};
+  const rawVolume = Number(player.volume);
   return {
     sessionId: raw.Session?.id ?? raw.session?.id ?? null,
     playerId: player.machineIdentifier ?? player.uuid ?? player.title ?? null,
     playerTitle: player.title ?? player.product ?? 'Plex player',
     state: player.state ?? 'stopped',
     title: raw.grandparentTitle ? `${raw.grandparentTitle} — ${raw.title}` : (raw.title ?? ''),
+    mediaType: raw.type ?? 'video',
+    volume: Number.isFinite(rawVolume) ? Math.min(100, Math.max(0, rawVolume)) : null,
   };
 }
