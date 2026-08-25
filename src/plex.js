@@ -1,4 +1,6 @@
 const ACCEPT_JSON = 'application/json';
+const READ_TIMEOUT_MS = 5_000;
+const COMMAND_TIMEOUT_MS = 2_500;
 
 function headers(config) {
   return {
@@ -27,13 +29,20 @@ async function request(config, path, options = {}) {
       `Plex URL ${config.server_url} points to the integration container. Use the Plex server LAN address instead.`,
     );
   }
+  const { timeoutMs = READ_TIMEOUT_MS, headers: extraHeaders, ...fetchOptions } = options;
   let response;
   try {
     response = await fetch(url, {
-      ...options,
-      headers: { ...headers(config), ...(options.headers ?? {}) },
+      ...fetchOptions,
+      headers: { ...headers(config), ...(extraHeaders ?? {}) },
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (error) {
+    if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+      throw new Error(`Plex request timed out after ${timeoutMs} ms at ${config.server_url}`, {
+        cause: error,
+      });
+    }
     if (error.cause?.code === 'ECONNREFUSED') {
       throw new Error(
         `Connection refused by Plex at ${config.server_url}. Check the LAN address, port 32400 and firewall.`,
@@ -65,7 +74,10 @@ export async function getSessions(config) {
 export async function stopSession(config, sessionId) {
   if (!sessionId) throw new Error('Cannot stop a Plex session without a session id');
   const query = new URLSearchParams({ sessionId, reason: 'Stopped by Gladys' });
-  await request(config, `/status/sessions/terminate?${query.toString()}`, { method: 'POST' });
+  await request(config, `/status/sessions/terminate?${query.toString()}`, {
+    method: 'POST',
+    timeoutMs: COMMAND_TIMEOUT_MS,
+  });
 }
 
 export function normalizeSession(raw) {

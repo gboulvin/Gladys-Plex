@@ -70,3 +70,12 @@ test('normalizeSession extracts the session, player, state and title', () => {
     },
   );
 });
+
+test('getSessions turns a network timeout into an actionable Plex error', async () => {
+  globalThis.fetch = async () => {
+    const error = new Error('request timeout');
+    error.name = 'TimeoutError';
+    throw error;
+  };
+  await assert.rejects(() => getSessions(config), /Plex request timed out after 5000 ms/);
+});

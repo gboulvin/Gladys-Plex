@@ -5,6 +5,7 @@ import { DEFAULT_CONFIG, normalizeConfig } from '../src/config.js';
 test('Plex configuration has no container-local URL default', () => {
   assert.equal(DEFAULT_CONFIG.server_url, '');
   assert.equal(DEFAULT_CONFIG.client_identifier, 'gladys-plex-integration');
+  assert.equal(DEFAULT_CONFIG.session_refresh_seconds, 10);
 });
 
 test('normalizeConfig trims the Plex URL, token and trailing slash', () => {
@@ -12,10 +13,12 @@ test('normalizeConfig trims the Plex URL, token and trailing slash', () => {
     server_url: ' http://192.168.1.20:32400/ ',
     token: ' token ',
     client_identifier: ' gladys-test ',
+    session_refresh_seconds: '1',
   });
   assert.deepEqual(config, {
     server_url: 'http://192.168.1.20:32400',
     token: 'token',
     client_identifier: 'gladys-test',
+    session_refresh_seconds: 2,
   });
 });

@@ -5,10 +5,10 @@ import { DEVICE_BLUEPRINTS } from '../src/devices/index.js';
 
 test('manifest uses the Plex external integration identity and required configuration', () => {
   assert.equal(manifest.name, 'Plex');
-  assert.equal(manifest.gladys_version, '>=4.85.0');
+  assert.equal(manifest.gladys_version, '>=4.86.0');
   assert.deepEqual(
     manifest.config_schema.filter((field) => field.type !== 'section').map((field) => field.key),
-    ['server_url', 'token', 'client_identifier'],
+    ['server_url', 'token', 'client_identifier', 'session_refresh_seconds'],
   );
 });
 

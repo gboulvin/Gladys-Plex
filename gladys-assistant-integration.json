@@ -1,6 +1,7 @@
 {
   "manifest_version": 1,
   "type": "device",
+  "categories": ["multimedia"],
   "name": "Plex",
   "description": {
     "en": "Use Plex playback state in Gladys scenes, stop active playback, and receive Plex webhooks.",
@@ -8,7 +9,7 @@
   },
   "version": "1.0.0",
   "docker_image": "ghcr.io/gboulvin/gladys-plex:1.0.0",
-  "gladys_version": ">=4.85.0",
+  "gladys_version": ">=4.86.0",
   "cover_image": "https://raw.githubusercontent.com/gboulvin/Gladys-Plex/main/cover.png",
   "transports": ["local"],
   "config_schema": [
@@ -53,6 +54,19 @@
       "label": { "en": "Client identifier", "fr": "Identifiant client" },
       "required": false,
       "default": "gladys-plex-integration"
+    },
+    {
+      "key": "session_refresh_seconds",
+      "type": "number",
+      "label": { "en": "Fallback refresh interval (s)", "fr": "Intervalle de secours (s)" },
+      "description": {
+        "en": "Used only as a fallback when Plex notifications do not arrive. Plex WebSocket events refresh playback immediately.",
+        "fr": "Utilisé seulement si les notifications Plex ne sont pas reçues. Les événements WebSocket Plex rafraîchissent la lecture immédiatement."
+      },
+      "required": false,
+      "default": 10,
+      "min": 2,
+      "max": 60
     }
   ],
   "webhooks": [
