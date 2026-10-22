@@ -16,15 +16,15 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@gladysassistant/integration-sdk": "^0.11.0",
-    "ws": "^8.21.3"
+    "@gladysassistant/integration-sdk": "^0.15.0",
+    "ws": "^8.22.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "eslint": "^10.7.0",
+    "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",
-    "globals": "^17.7.0",
-    "prettier": "^3.9.5"
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10"
   },
   "license": "Apache-2.0"
 }
